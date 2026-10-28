@@ -52,7 +52,7 @@ pin: true
 연재 예정 글:
 
 - [1편: CDC란 무엇이고, 왜 DB를 Polling하지 않을까?](https://neoguri95.github.io/posts/cdc-what-is-it-and-why-not-polling/)
-- 2편: PostgreSQL WAL부터 Logical Decoding까지 동작 원리 이해하기
+- [2편: WAL은 왜 존재하나](https://neoguri95.github.io/posts/why-need-postgresql-wal/)
 
 ## 2주차 - PostgreSQL만으로 CDC 구현하기
 
