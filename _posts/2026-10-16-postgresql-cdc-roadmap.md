@@ -38,22 +38,16 @@ pin: true
 
 학습 순서:
 
-1. CDC란 무엇인가? Polling, Trigger, Log-based CDC 비교
-2. PostgreSQL WAL(Write-Ahead Log)의 역할
-3. 트랜잭션 Commit과 WAL 기록의 관계
-4. Physical Replication vs Logical Replication
+1. [1편: CDC란 무엇이고, 왜 DB를 Polling하지 않을까?](https://neoguri95.github.io/posts/cdc-what-is-it-and-why-not-polling/)
+2. [2편: WAL은 왜 존재하나](https://neoguri95.github.io/posts/why-need-postgresql-wal/)
+3. [3편: Commit시 WAL에서 일어나는 일(실습 포함)](https://neoguri95.github.io/posts/relation-of-commit-and-wal/)
+4. [4편: Physical Replication vs Logical Replication](https://neoguri95.github.io/posts/physical-replication-vs-logical-replication/)
 5. Logical Decoding과 Output Plugin의 동작 원리
 6. LSN(Log Sequence Number)의 의미
 
 > WAL은 처음부터 CDC를 위해 만들어진 기능이 아니라, **데이터 복구와 내구성 보장을 위한 로그**입니다.
 > Logical Decoding이 이 로그를 읽어 논리적인 데이터 변경 이벤트로 변환합니다.
 > {: .prompt-tip }
-
-연재 예정 글:
-
-- [1편: CDC란 무엇이고, 왜 DB를 Polling하지 않을까?](https://neoguri95.github.io/posts/cdc-what-is-it-and-why-not-polling/)
-- [2편: WAL은 왜 존재하나](https://neoguri95.github.io/posts/why-need-postgresql-wal/)
-- [3편: Commit시 WAL에서 일어나는 일(실습 포함)](https://neoguri95.github.io/posts/relation-of-commit-and-wal/)
 
 ## 2주차 - PostgreSQL만으로 CDC 구현하기
 
