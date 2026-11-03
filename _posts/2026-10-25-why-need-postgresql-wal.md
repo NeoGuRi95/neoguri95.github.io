@@ -39,7 +39,7 @@ WAL은 위 딜레마를 풀기 위해 **TODO 리스트를 작성하는 것**이�
 
 그렇다면 이제 크래시 발생 후 복구가 어떤식으로 이루어지는지 살펴봅시다.
 
-![체크포인트 이후 WAL을 재생해 커밋된 트랜잭션을 복구하는 과정](/assets/img/postgresql-wal-crash-recovery.png)
+![체크포인트 이후 WAL을 재생해 커밋된 트랜잭션을 복구하는 과정](/assets/img/posts/why-need-postgresql-wal/crash-recovery.png)
 
 1. 디스크의 WAL 파일을 마지막 체크포인트 시점부터 순차적으로 읽습니다. 
 2. T1과 T2 트랜재션의 커밋 기록이 WAL 파일에 있기 때문에 복구 대상입니다. 1번 커밋 규칙에 따라서 T1, T2 세션은 "COMMIT 완료"를 응답받았기 때문에 더더욱 복구 대상입니다. 

@@ -57,7 +57,7 @@ synchronous_standby_names = 's1, s2'
 
 Physical 스트리밍 복제에서는 Primary의 walsender가 WAL을 보내고, Standby의 walreceiver가 받아 쓰며, startup 프로세스가 재생(redo)합니다. 수신·디스크 반영·재생 위치는 서로 다를 수 있습니다. 동기 복제를 사용하는 트랜잭션에서 `synchronous_commit`은 어느 단계의 확인까지 기다릴지 정합니다.
 
-![PostgreSQL physical replication flow](/assets/img/postgresql-physical-replication-flow.png)
+![PostgreSQL physical replication flow](/assets/img/posts/physical-replication-vs-logical-replication/physical-replication-flow.png)
 
 - `on`(기본): 동기 Standby가 커밋 WAL을 내구성 있는 저장소에 flush할 때까지 기다립니다. 다만 replay가 끝나기 전이라면 **Standby에서 바로 조회할 때 아직 보이지 않을 수 있습니다.**
 - `remote_apply`: 동기 Standby가 WAL을 재생해 해당 변경을 쿼리에서 볼 수 있을 때까지 기다립니다. 해당 Standby에서의 read-your-writes가 필요할 때 유용하지만 대기 시간이 더 길 수 있습니다.

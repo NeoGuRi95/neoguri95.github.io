@@ -48,7 +48,7 @@ Output Plugin은 두 가지를 사용합니다.
 
 슬롯의 출력을 읽으려면 WAL이 어떤 구조인지 알아 두는 편이 좋습니다. WAL은 논리적으로 하나로 이어지는 로그이지만, 실제로는 기본 16MB 크기의 파일로 나뉘어 `pg_wal` 디렉터리에 저장됩니다. 이 파일 하나가 **세그먼트**입니다. 세그먼트는 8kB 크기의 페이지로 나뉘고, 페이지 안에 **레코드**가 이어집니다. 레코드는 "데이터 페이지를 이렇게 바꿨다"를 적은 변경 기록 한 건으로, WAL을 이루는 최소 단위입니다. [WAL Internals 문서](https://www.postgresql.org/docs/18/wal-internals.html)
 
-![WAL 세그먼트, 페이지, 레코드의 포함 관계와 레코드 내부 구조](/assets/img/postgresql-wal-segment-page-record.png)
+![WAL 세그먼트, 페이지, 레코드의 포함 관계와 레코드 내부 구조](/assets/img/posts/postgresql-cdc-without-debezium/wal-segment-page-record.png)
 
 LSN은 WAL 안의 바이트 위치이므로 LSN만 알면 파일과 위치를 계산할 수 있습니다. 예를 들어 `0/1C65250`을 16MB(`0x1000000`)로 나누면 몫이 `0x1`, 나머지가 `0xC65250`입니다. 즉, 1번 세그먼트의 약 12.4MB 지점입니다. 뒤에서 사용할 `pg_walfile_name()`이 이 계산을 대신해 줍니다.
 
@@ -181,13 +181,13 @@ docker exec pg-cdc-lab pg_waldump -p /var/lib/postgresql/18/docker/pg_wal -s 0/1
 
 이 레코드들이 슬롯 출력이 되는 과정은 아래와 같습니다.
 
-![INSERT 한 문장이 WAL 레코드 4개로 기록되고 커밋 시점에 슬롯으로 출력되는 흐름](/assets/img/postgresql-wal-sql-to-records.png)
+![INSERT 한 문장이 WAL 레코드 4개로 기록되고 커밋 시점에 슬롯으로 출력되는 흐름](/assets/img/posts/postgresql-cdc-without-debezium/wal-sql-to-records.png)
 
 인덱스 레코드는 행 변경 이벤트가 아니므로 출력되지 않습니다. 행 변경은 트랜잭션별로 모아 두었다가 커밋 레코드를 만나면 내보냅니다. 슬롯 출력이 커밋 순서대로 나오는 이유이기도 합니다.
 
 이제 레코드를 WAL에 놓인 순서대로 펼치고, 출력의 `lsn` 컬럼 값을 겹쳐 보겠습니다.
 
-![트랜잭션 772, 773, 774의 WAL 레코드 경계와 슬롯 출력 LSN의 대응 관계](/assets/img/postgresql-wal-lsn-boundaries.png)
+![트랜잭션 772, 773, 774의 WAL 레코드 경계와 슬롯 출력 LSN의 대응 관계](/assets/img/posts/postgresql-cdc-without-debezium/wal-lsn-boundaries.png)
 
 `lsn` 컬럼의 기준은 줄의 종류마다 다릅니다.
 
@@ -430,7 +430,7 @@ FROM pg_replication_slots;
 
 먼저 확인한 위치(`confirmed_flush_lsn`)에서 바로 다시 읽을 수 없는 이유부터 보겠습니다.
 
-![트랜잭션 T1이 진행 중일 때 confirmed_flush_lsn부터 다시 읽으면 T1의 앞부분을 놓치는 상황](/assets/img/postgresql-slot-restart-why.png)
+![트랜잭션 T1이 진행 중일 때 confirmed_flush_lsn부터 다시 읽으면 T1의 앞부분을 놓치는 상황](/assets/img/posts/postgresql-cdc-without-debezium/slot-restart-why.png)
 
 이 위치부터 다시 읽으면 T1의 뒷부분만 보입니다. 앞부분은 이미 지나갔으니 T1을 온전한 트랜잭션으로 내보낼 수 없습니다. 게다가 디코더는 그 시점에 어떤 트랜잭션이 진행 중이었는지조차 모릅니다.
 
@@ -442,7 +442,7 @@ FROM pg_replication_slots;
 
 앞의 두 결과를 나란히 놓으면 차이가 보입니다(그림에서 RX는 `RUNNING_XACTS`).
 
-![CHECKPOINT를 거친 경우와 바로 읽은 경우의 restart_lsn 위치 비교](/assets/img/postgresql-slot-restart-checkpoint.png)
+![CHECKPOINT를 거친 경우와 바로 읽은 경우의 restart_lsn 위치 비교](/assets/img/posts/postgresql-cdc-without-debezium/slot-restart-checkpoint.png)
 
 - **A. CHECKPOINT 후 읽기**: 체크포인트가 커밋 뒤에 `RUNNING_XACTS`를 남겼고, `restart_lsn`이 그 위치로 이동했습니다. 같은 절차를 반복해 pg_waldump로 확인해 보면, `restart_lsn`이 체크포인트가 남긴 `RUNNING_XACTS`의 LSN과 정확히 같았습니다.
 - **B. 바로 읽기**: 커밋 뒤에 `RUNNING_XACTS`가 하나도 없습니다. 재시작 후보가 생기지 않았으니 `restart_lsn`은 INSERT 이전 위치에 남고, 그 뒤 98MB가 보존됩니다.
@@ -509,7 +509,7 @@ SELECT name FROM pg_ls_waldir() ORDER BY name;
 세션 B: CHECKPOINT → get_changes
 ```
 
-![열린 트랜잭션이 있으면 CHECKPOINT의 RUNNING_XACTS가 있어도 restart_lsn이 그 트랜잭션 시작 직전에 머무는 모습](/assets/img/postgresql-slot-restart-open-tx.png)
+![열린 트랜잭션이 있으면 CHECKPOINT의 RUNNING_XACTS가 있어도 restart_lsn이 그 트랜잭션 시작 직전에 머무는 모습](/assets/img/posts/postgresql-cdc-without-debezium/slot-restart-open-tx.png)
 
 세션 B가 30만 건을 다 읽고 체크포인트까지 거쳤는데도, `restart_lsn`은 세션 A의 트랜잭션이 시작되기 직전에 머물러 98MB가 남았습니다. 체크포인트가 남긴 `RUNNING_XACTS`에는 A가 진행 중으로 기록되어 있어서 재시작 지점으로 쓸 수 없기 때문입니다. A가 커밋하고 다시 체크포인트를 거친 뒤 읽자 그제야 `restart_lsn`이 따라왔습니다(200 bytes).
 
